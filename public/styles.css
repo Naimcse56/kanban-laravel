@@ -153,3 +153,9 @@
   .card {
     width: 18rem;
   }
+  ul {
+    min-height: 100px;
+  }
+  li{
+    cursor: pointer;
+  }

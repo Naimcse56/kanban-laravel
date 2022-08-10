@@ -4,7 +4,8 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Laravel</title>
+        <title>Kanban Laravel</title>
+        <meta name="_token" content="{!! csrf_token() !!}"/>
 
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -21,53 +22,47 @@
                 <div class="form-content">
                     <div class="form-items">
                         <h3>{{ date('d-m-Y') }}</h3>
-                        <form action="#">
+                        <form action="javascript:void(0)" method="POST" class="add_item_form" id="add_item_form">
                             <div class="row">
                                 <div class="col-xl-12">
-                                    <input type="text" class="form-control" placeholder="Write Your Task">
+                                    <input type="text" class="form-control" name="title" id="title" placeholder="Write Your Task">
+                                    <span class="text-danger" id="title_error"></span>
                                 </div>
                                 <div class="col-xl-12 mt-3 text-right">
-                                    <button class="btn btn-success" type="button">ADD</button>
+                                    <button class="btn btn-success" type="submit">ADD</button>
                                 </div>
                             </div>
                         </form>
                         <div class="row mt-3">
                             <div class="col-xl-4">
-                                <div class="card">
+                                <div class="card" id="to_do_div">
                                     <div class="card-header">
                                      TO DO
                                     </div>
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item">Cras justo odio</li>
-                                        <li class="list-group-item">Dapibus ac facilisis in</li>
-                                        <li class="list-group-item">Vestibulum at eros</li>
-                                        <li class="list-group-item">Vestibulum at eros</li>
-                                        <li class="list-group-item">Vestibulum at eros</li>
-                                        <li class="list-group-item">Vestibulum at eros</li>
+                                    <ul class="list-group list-group-flush sortable_area" id="to_do_ul">
+                                        @foreach ($items as $item)
+                                            <li class="list-group-item to_item" data-id="task_{{ $item->id }}">{{ $item->title }}</li>
+                                        @endforeach
                                     </ul>
                                 </div>
                             </div>
                             <div class="col-xl-4">
-                                <div class="card">
+                                <div class="card" id="in_progress_div">
                                     <div class="card-header">
                                      IN PROGRESS
                                     </div>
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item">Cras justo odio</li>
-                                        <li class="list-group-item">Dapibus ac facilisis in</li>
-                                        <li class="list-group-item">Dapibus ac facilisis in</li>
-                                        <li class="list-group-item">Vestibulum at eros</li>
+                                    <ul class="list-group list-group-flush sortable_area" id="in_progress_ul">
+                                        
                                     </ul>
                                 </div>
                             </div>
                             <div class="col-xl-4">
-                                <div class="card">
+                                <div class="card" id="done_list_div">
                                     <div class="card-header">
                                      DONE
                                     </div>
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item">Cras justo odio</li>
-                                        <li class="list-group-item">Dapibus ac facilisis in</li>
+                                    <ul class="list-group list-group-flush sortable_area" id="done_ul">
+                                        
                                     </ul>
                                 </div>
                             </div>
@@ -78,9 +73,64 @@
         </div>
     
 
-
-        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+        <script type="text/javascript">
+        (function($) {
+            "use strict";
+            let _token = $('meta[name=_token]').attr('content') ;
+            $(document).ready(function(){
+                $(".sortable_area").sortable({
+                    connectWith: ".sortable_area",
+                    update: function(e, ui) {
+                        // if (!ui.sender) return
+                        var s = ui.item.attr("data-id");
+                        // var to_do_matches = $("#to_do_ul li[data-target=" + s + "]").length;
+                        // var in_progress_matches = $("#in_progress_ul li[data-target=" + s + "]").length;
+                        // var done_matches = $("#done_ul li[data-target=" + s + "]").length;
+                        console.log(s)
+                    }
+                }).disableSelection();
+                $(document).on('submit', '#add_item_form', function(event){
+                    event.preventDefault();
+                    let formElement = $(this).serializeArray()
+                    let formData = new FormData();
+                    formElement.forEach(element => {
+                        formData.append(element.name,element.value);
+                    });
+                    formData.append('_token',_token);
+                    resetValidationError();
+                    $.ajax({
+                        url: '{{ route('tasks.store') }}',
+                        type:"POST",
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        data: formData,
+                        success:function(response){
+                            console.log(response)
+                            $("#to_do_div ul").append('<li class="list-group-item to_item">'+response.message+'</li>');
+                            $('#add_item_form')[0].reset();
+                        },
+                        error:function(response) {
+                            console.log(response)
+                            showValidationErrors('#add_item_form',response.responseJSON.errors);
+                        }
+                    });
+                });
+                function create_form_reset(){
+                    $('#add_item_form')[0].reset();
+                }
+                function resetValidationError(){
+                    $('#title_error').html('');
+                }
+                function showValidationErrors(formType, errors){
+                    $(formType +' #title_error').text(errors.name);
+                }
+            });
+        })(jQuery);
+
+        </script>
     </body>
 </html>
