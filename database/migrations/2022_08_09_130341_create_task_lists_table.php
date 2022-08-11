@@ -17,6 +17,7 @@ class CreateTaskListsTable extends Migration
             $table->id();
             $table->string('title');
             $table->string('status')->comment('to_do -> progress -> done');
+            $table->Integer('position')->default(0);
             $table->timestamps();
         });
     }

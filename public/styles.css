@@ -87,7 +87,7 @@
   background-color: #fff;
   font-size: 15px;
   font-weight: 300;
-  color: #8D8D8D;
+  color: #000000;
   -webkit-transition: all 0.3s ease;
   transition: all 0.3s ease;
   margin-top: 16px;
@@ -118,7 +118,7 @@
   border: 0;
   font-size: 15px;
   font-weight: 300;
-  color: #8D8D8D;
+  color: #000000;
   outline: none;
   resize: none;
   height: 120px;
@@ -154,7 +154,7 @@
     width: 18rem;
   }
   ul {
-    min-height: 100px;
+    min-height: 200px;
   }
   li{
     cursor: pointer;

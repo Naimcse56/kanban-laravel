@@ -21,27 +21,27 @@
             <div class="form-holder">
                 <div class="form-content">
                     <div class="form-items">
-                        <h3>{{ date('d-m-Y') }}</h3>
+                        <h3>Today: {{ date('d-m-Y') }}</h3>
                         <form action="javascript:void(0)" method="POST" class="add_item_form" id="add_item_form">
                             <div class="row">
-                                <div class="col-xl-12">
+                                <div class="col-xl">
                                     <input type="text" class="form-control" name="title" id="title" placeholder="Write Your Task">
                                     <span class="text-danger" id="title_error"></span>
                                 </div>
-                                <div class="col-xl-12 mt-3 text-right">
-                                    <button class="btn btn-success" type="submit">ADD</button>
+                                <div class="col-xl-auto mt-3 text-right">
+                                    <button class="btn btn-success w-100" type="submit">ADD</button>
                                 </div>
                             </div>
                         </form>
-                        <div class="row mt-3">
+                        <div class="row mt-3 main_section">
                             <div class="col-xl-4">
                                 <div class="card" id="to_do_div">
                                     <div class="card-header">
                                      TO DO
                                     </div>
-                                    <ul class="list-group list-group-flush sortable_area" id="to_do_ul">
+                                    <ul class="list-group list-group-flush todo sortable_area" id="to_do_ul">
                                         @foreach ($items as $item)
-                                            <li class="list-group-item to_item" data-id="task_{{ $item->id }}">{{ $item->title }}</li>
+                                            <li class="list-group-item to_item" data-id="{{ $item->id }}">{{ $item->title }}</li>
                                         @endforeach
                                     </ul>
                                 </div>
@@ -51,8 +51,10 @@
                                     <div class="card-header">
                                      IN PROGRESS
                                     </div>
-                                    <ul class="list-group list-group-flush sortable_area" id="in_progress_ul">
-                                        
+                                    <ul class="list-group list-group-flush sortable_area in_progress" id="in_progress_ul">
+                                        @foreach ($progress_items as $progress_item)
+                                            <li class="list-group-item progress_item" data-id="{{ $progress_item->id }}">{{ $progress_item->title }}</li>
+                                        @endforeach
                                     </ul>
                                 </div>
                             </div>
@@ -61,8 +63,10 @@
                                     <div class="card-header">
                                      DONE
                                     </div>
-                                    <ul class="list-group list-group-flush sortable_area" id="done_ul">
-                                        
+                                    <ul class="list-group list-group-flush sortable_area done" id="done_ul">
+                                        @foreach ($done_items as $done_item)
+                                            <li class="list-group-item done_item" data-id="{{ $done_item->id }}">{{ $done_item->title }}</li>
+                                        @endforeach 
                                     </ul>
                                 </div>
                             </div>
@@ -80,18 +84,90 @@
         (function($) {
             "use strict";
             let _token = $('meta[name=_token]').attr('content') ;
+        
             $(document).ready(function(){
-                $(".sortable_area").sortable({
+                var last_id = '';
+                $(".done").sortable({
                     connectWith: ".sortable_area",
-                    update: function(e, ui) {
-                        // if (!ui.sender) return
-                        var s = ui.item.attr("data-id");
-                        // var to_do_matches = $("#to_do_ul li[data-target=" + s + "]").length;
-                        // var in_progress_matches = $("#in_progress_ul li[data-target=" + s + "]").length;
-                        // var done_matches = $("#done_ul li[data-target=" + s + "]").length;
-                        console.log(s)
+                    group: 3,
+                    receive: function(e, ui) {
+                        receiveIndexStatus(ui.item, '3');
+                    },
+                    stop: function (e, ui){
+                        sortItems(ui.item);
+                    }
+                
+                }).disableSelection();
+
+                $(".in_progress").sortable({
+                    connectWith: ".sortable_area",
+                    group: 2,
+                    receive: function(e, ui) {
+                        receiveIndexStatus(ui.item, '2');
+                    },
+                    stop: function (e, ui){
+                        sortItems(ui.item);
                     }
                 }).disableSelection();
+
+                $(".todo").sortable({
+                    connectWith: ".sortable_area",
+                    group: 1,
+                    receive: function(e, ui) {
+                        receiveIndexStatus(ui.item, '1');
+                    },
+                    stop: function (e, ui){
+                        sortItems(ui.item);
+                    }
+                }).disableSelection();
+
+                function receiveIndexStatus(item, div='1'){
+                    let id = item.data('id');
+                    last_id = id;
+                    let position = item.index();
+                    $('.sortable_area').sortable( "disable" );
+                    $('.sortable_area').sortable( "enable" );
+
+                    updateInfo(id, position, div);
+                }
+
+                function sortItems(item){
+                    let id = item.data('id');
+                    if(id != last_id){
+                        let position = item.index();
+                        // updateInfo(id, position);
+                    }else {
+                        last_id = ''
+                    }
+                }
+
+                function updateInfo(id, position, div = "none")
+                {
+                    $('.sortable_area').sortable( "disable" );
+                    let formElement = $(this).serializeArray()
+                    let formData = new FormData();
+                    formData.append('_token',_token);
+                    formData.append('id',id);
+                    formData.append('position',position);
+                    formData.append('status',div);
+                    resetValidationError();
+                    $.ajax({
+                        url: '{{ route('tasks.update') }}',
+                        type:"POST",
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        data: formData,
+                        success:function(response){
+                            alert(response.message)
+                            $('.sortable_area').sortable( "enable" );
+                        },
+                        error:function(response) {
+                            $('.sortable_area').sortable( "enable" );
+                        }
+                    });
+                }
+
                 $(document).on('submit', '#add_item_form', function(event){
                     event.preventDefault();
                     let formElement = $(this).serializeArray()
@@ -110,7 +186,7 @@
                         data: formData,
                         success:function(response){
                             console.log(response)
-                            $("#to_do_div ul").append('<li class="list-group-item to_item">'+response.message+'</li>');
+                            $("#to_do_div ul").append('<li class="list-group-item to_item" data-id="'+response.id+'">'+response.title+'</li>');
                             $('#add_item_form')[0].reset();
                         },
                         error:function(response) {
